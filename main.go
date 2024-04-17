@@ -76,8 +76,7 @@ func main() {
 	restApiRouter.Post("/createproducts", apiConfigObj.authMiddleware(apiConfigObj.createProduct))
 	restApiRouter.Get("/userproducts", apiConfigObj.authMiddleware(apiConfigObj.productByUsers))
 	restApiRouter.Put("/updatepriority/{productId}", apiConfigObj.authMiddleware(apiConfigObj.updateProductPriority))
-	restApiRouter.Delete("/
-	/{productId}", apiConfigObj.authMiddleware(apiConfigObj.deleteProduct))
+	restApiRouter.Delete("/deleteproduct/{productId}", apiConfigObj.authMiddleware(apiConfigObj.deleteProduct))
 
 	mainRouter.Mount("/v1", restApiRouter)
 
