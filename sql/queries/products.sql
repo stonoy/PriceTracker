@@ -28,3 +28,17 @@ updated_at = NOW(),
 current_Price = $1
 where id = $2
 RETURNING *;
+
+-- name: UpdateProductPriority :one
+update products
+set priority = $1
+where id = $2
+RETURNING *;
+
+-- name: GetProductById :one
+select * from products
+where id = $1;
+
+-- name: DeleteProduct :exec
+delete from products
+where id = $1;

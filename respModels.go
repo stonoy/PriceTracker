@@ -25,6 +25,7 @@ type Product struct {
 	UserID       uuid.UUID `json:"user_id"`
 	BasePrice    int       `json:"base_price"`
 	CurrentPrice int       `json:"current_price"`
+	Priority     bool      `json:"priority"`
 }
 
 func userDbtoJson(DbUser database.User, token string) User {
@@ -48,6 +49,7 @@ func productDbtoJson(DbProduct database.Product) Product {
 		UserID:       DbProduct.UserID,
 		BasePrice:    int(DbProduct.BasePrice.Int32),
 		CurrentPrice: int(DbProduct.CurrentPrice.Int32),
+		Priority:     DbProduct.Priority.Bool,
 	}
 }
 

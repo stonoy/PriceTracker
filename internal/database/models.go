@@ -21,6 +21,7 @@ type Product struct {
 	BasePrice     sql.NullInt32
 	CurrentPrice  sql.NullInt32
 	LastFetchedAt sql.NullTime
+	Priority      sql.NullBool
 }
 
 type User struct {

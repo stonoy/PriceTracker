@@ -16,7 +16,7 @@ import (
 const createProduct = `-- name: CreateProduct :one
 insert into products(id, created_at, updated_at, name, url, user_id)
 values ($1,$2,$3,$4,$5,$6)
-RETURNING id, created_at, updated_at, name, url, user_id, base_price, current_price, last_fetched_at
+RETURNING id, created_at, updated_at, name, url, user_id, base_price, current_price, last_fetched_at, priority
 `
 
 type CreateProductParams struct {
@@ -48,12 +48,23 @@ func (q *Queries) CreateProduct(ctx context.Context, arg CreateProductParams) (P
 		&i.BasePrice,
 		&i.CurrentPrice,
 		&i.LastFetchedAt,
+		&i.Priority,
 	)
 	return i, err
 }
 
+const deleteProduct = `-- name: DeleteProduct :exec
+delete from products
+where id = $1
+`
+
+func (q *Queries) DeleteProduct(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, deleteProduct, id)
+	return err
+}
+
 const findProductsByUser = `-- name: FindProductsByUser :many
-select id, created_at, updated_at, name, url, user_id, base_price, current_price, last_fetched_at from products
+select id, created_at, updated_at, name, url, user_id, base_price, current_price, last_fetched_at, priority from products
 where user_id = $1
 order by updated_at desc
 `
@@ -77,6 +88,7 @@ func (q *Queries) FindProductsByUser(ctx context.Context, userID uuid.UUID) ([]P
 			&i.BasePrice,
 			&i.CurrentPrice,
 			&i.LastFetchedAt,
+			&i.Priority,
 		); err != nil {
 			return nil, err
 		}
@@ -91,8 +103,31 @@ func (q *Queries) FindProductsByUser(ctx context.Context, userID uuid.UUID) ([]P
 	return items, nil
 }
 
+const getProductById = `-- name: GetProductById :one
+select id, created_at, updated_at, name, url, user_id, base_price, current_price, last_fetched_at, priority from products
+where id = $1
+`
+
+func (q *Queries) GetProductById(ctx context.Context, id uuid.UUID) (Product, error) {
+	row := q.db.QueryRowContext(ctx, getProductById, id)
+	var i Product
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Name,
+		&i.Url,
+		&i.UserID,
+		&i.BasePrice,
+		&i.CurrentPrice,
+		&i.LastFetchedAt,
+		&i.Priority,
+	)
+	return i, err
+}
+
 const getProductsToFetch = `-- name: GetProductsToFetch :many
-select id, created_at, updated_at, name, url, user_id, base_price, current_price, last_fetched_at from products
+select id, created_at, updated_at, name, url, user_id, base_price, current_price, last_fetched_at, priority from products
 order by last_fetched_at asc nulls first
 limit $1
 `
@@ -116,6 +151,7 @@ func (q *Queries) GetProductsToFetch(ctx context.Context, limit int32) ([]Produc
 			&i.BasePrice,
 			&i.CurrentPrice,
 			&i.LastFetchedAt,
+			&i.Priority,
 		); err != nil {
 			return nil, err
 		}
@@ -136,7 +172,7 @@ set last_fetched_at = NOW(),
 updated_at = NOW(),
 base_price = $1
 where id = $2
-RETURNING id, created_at, updated_at, name, url, user_id, base_price, current_price, last_fetched_at
+RETURNING id, created_at, updated_at, name, url, user_id, base_price, current_price, last_fetched_at, priority
 `
 
 type UpdateBasePriceParams struct {
@@ -157,6 +193,7 @@ func (q *Queries) UpdateBasePrice(ctx context.Context, arg UpdateBasePriceParams
 		&i.BasePrice,
 		&i.CurrentPrice,
 		&i.LastFetchedAt,
+		&i.Priority,
 	)
 	return i, err
 }
@@ -167,7 +204,7 @@ set last_fetched_at = NOW(),
 updated_at = NOW(),
 current_Price = $1
 where id = $2
-RETURNING id, created_at, updated_at, name, url, user_id, base_price, current_price, last_fetched_at
+RETURNING id, created_at, updated_at, name, url, user_id, base_price, current_price, last_fetched_at, priority
 `
 
 type UpdateCurrentPriceParams struct {
@@ -188,6 +225,37 @@ func (q *Queries) UpdateCurrentPrice(ctx context.Context, arg UpdateCurrentPrice
 		&i.BasePrice,
 		&i.CurrentPrice,
 		&i.LastFetchedAt,
+		&i.Priority,
+	)
+	return i, err
+}
+
+const updateProductPriority = `-- name: UpdateProductPriority :one
+update products
+set priority = $1
+where id = $2
+RETURNING id, created_at, updated_at, name, url, user_id, base_price, current_price, last_fetched_at, priority
+`
+
+type UpdateProductPriorityParams struct {
+	Priority sql.NullBool
+	ID       uuid.UUID
+}
+
+func (q *Queries) UpdateProductPriority(ctx context.Context, arg UpdateProductPriorityParams) (Product, error) {
+	row := q.db.QueryRowContext(ctx, updateProductPriority, arg.Priority, arg.ID)
+	var i Product
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Name,
+		&i.Url,
+		&i.UserID,
+		&i.BasePrice,
+		&i.CurrentPrice,
+		&i.LastFetchedAt,
+		&i.Priority,
 	)
 	return i, err
 }
