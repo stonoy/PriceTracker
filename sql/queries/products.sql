@@ -30,10 +30,11 @@ where id = $2
 RETURNING *;
 
 -- name: UpdateProductPriority :one
-update products
-set priority = $1
-where id = $2
+UPDATE products
+SET priority = CASE WHEN priority THEN false ELSE true END
+WHERE id = $1
 RETURNING *;
+
 
 -- name: GetProductById :one
 select * from products

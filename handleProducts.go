@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -64,9 +63,6 @@ func (cfg *apiConfig) productByUsers(w http.ResponseWriter, r *http.Request, use
 }
 
 func (cfg *apiConfig) updateProductPriority(w http.ResponseWriter, r *http.Request, user database.User) {
-	type reqStruct struct {
-		Priority bool `json:"priority"`
-	}
 
 	idString := chi.URLParam(r, "productId")
 	id, err := uuid.Parse(idString)
@@ -87,20 +83,7 @@ func (cfg *apiConfig) updateProductPriority(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	decoder := json.NewDecoder(r.Body)
-	reqObj := reqStruct{}
-	err = decoder.Decode(&reqObj)
-	if err != nil {
-		respWithError(w, 400, fmt.Sprintf("error in parsing incoming json : %v", err))
-		return
-	}
-
-	_, err =
-
-		cfg.DB.UpdateProductPriority(r.Context(), database.UpdateProductPriorityParams{
-			Priority: sql.NullBool{Bool: reqObj.Priority, Valid: true},
-			ID:       id,
-		})
+	_, err = cfg.DB.UpdateProductPriority(r.Context(), id)
 	if err != nil {
 		respWithError(w, 400, fmt.Sprintf("can not update product priority : %v", err))
 		return

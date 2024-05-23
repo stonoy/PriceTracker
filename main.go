@@ -2,6 +2,8 @@ package main
 
 import (
 	"database/sql"
+	"embed"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
@@ -14,38 +16,62 @@ import (
 	"github.com/stonoy/PriceTracker/internal/database"
 )
 
+//go:embed static/*
+var staticFiles embed.FS
+
 type apiConfig struct {
 	DB         *database.Queries
 	Jwt_Secret string
+}
+
+func (cfg *apiConfig) clientHandler() http.Handler {
+	fsys := fs.FS(staticFiles)
+	contentStatic, _ := fs.Sub(fsys, "static")
+	return http.FileServer(http.FS(contentStatic))
+
 }
 
 func main() {
 	// load .env file
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		log.Println("Error loading .env file, loading default configaration...")
 	}
 
 	port := os.Getenv("PORT")
-	db_conn := os.Getenv("DB_CONN")
-	jwt_secret := os.Getenv("JWT_SECRET")
-
-	// Database
-	db, err := sql.Open("postgres", db_conn)
-	if err != nil {
-		log.Fatal("error loading postgres database")
+	if port == "" {
+		log.Fatal("No port provided")
 	}
 
-	dbQueries := database.New(db)
+	jwt_secret := os.Getenv("JWT_SECRET")
+	if jwt_secret == "" {
+		log.Println("No jwt_secret provided")
+	}
 
 	// Creating config struct
 	apiConfigObj := &apiConfig{
-		DB:         dbQueries,
 		Jwt_Secret: jwt_secret,
 	}
 
+	db_conn := os.Getenv("DB_CONN")
+	if db_conn == "" {
+		log.Println("No database connected")
+	} else {
+		// Database
+		db, err := sql.Open("postgres", db_conn)
+		if err != nil {
+			log.Fatal("error loading postgres database")
+		}
+
+		dbQueries := database.New(db)
+
+		apiConfigObj.DB = dbQueries
+
+		log.Println("database connected")
+	}
+
 	// run our scrapper forever in different go routine
-	go apiConfigObj.ourScrapper(5, 10*time.Second)
+	go apiConfigObj.ourScrapper(50, 10*time.Second)
 
 	//Handlers
 	mainRouter := chi.NewRouter()
@@ -79,6 +105,9 @@ func main() {
 	restApiRouter.Delete("/deleteproduct/{productId}", apiConfigObj.authMiddleware(apiConfigObj.deleteProduct))
 
 	mainRouter.Mount("/v1", restApiRouter)
+
+	// provides client
+	mainRouter.Handle("/*", apiConfigObj.clientHandler())
 
 	myServer := &http.Server{
 		Addr:    ":" + port,

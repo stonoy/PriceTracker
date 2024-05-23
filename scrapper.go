@@ -125,7 +125,7 @@ func fromScrapToDb(product database.Product, cfg *apiConfig, wg *sync.WaitGroup,
 	// scrape the html
 	node, err := scrapHtml(product.Url)
 	if err != nil {
-		log.Printf("error in scrapping html - %v", err)
+		log.Printf("error in scrapping html from url - %v", product.Url)
 		return
 	}
 
