@@ -1,0 +1,50 @@
+name: cd
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.20'
+
+      - name: Install goose
+        run: go install github.com/pressly/goose/v3/cmd/goose@latest
+
+      - name: Build app
+        run: ./scripts/buildprod.sh
+
+      - name: Build Docker image
+        run: docker build -t gcr.io/pricetracker-424506/pricetracker-ar-repo/pricetracker:latest .
+
+      # Add the migration step here
+      - name: Run DB migrations
+        run: ./scripts/migrateup.sh
+        env:
+          DB_CONN: ${{ secrets.DB_CONN }}
+
+      
+      - name: Set up Google Cloud
+        uses: google-github-actions/setup-gcloud@v0.2.0
+        with:
+          service_account_key: ${{ secrets.GCP_CREDENTIALS }}
+          project_id: pricetracker-424506
+
+      - name: Configure Docker for GCR
+        run: gcloud auth configure-docker
+
+      - name: Push Docker image to GCR
+        run: docker push gcr.io/pricetracker-424506/pricetracker-ar-repo/pricetracker:latest
+
+      - name: Deploy to Cloud Run
+        run: gcloud run deploy PriceTracker --image gcr.io/pricetracker-424506/pricetracker-ar-repo/pricetracker:latest --region us-central1 --allow-unauthenticated --project pricetracker-424506 --max-instances=4
