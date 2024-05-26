@@ -47,4 +47,4 @@ jobs:
         run: docker push gcr.io/pricetracker-424506/pricetracker-ar-repo/pricetracker:latest
 
       - name: Deploy to Cloud Run
-        run: gcloud run deploy PriceTracker --image gcr.io/pricetracker-424506/pricetracker-ar-repo/pricetracker:latest --region us-central1 --allow-unauthenticated --project pricetracker-424506 --max-instances=4
+        run: gcloud run deploy pricetracker --image gcr.io/pricetracker-424506/pricetracker-ar-repo/pricetracker:latest --region us-central1 --allow-unauthenticated --project pricetracker-424506 --max-instances=4
