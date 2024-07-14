@@ -30,7 +30,7 @@ The primary objective of this project is to provide users with a tool to track A
 - Node.js (16.x or later)
 - PostgreSQL
 
-### Backend Setup
+### Quick StartUp
 
 1. Clone the repository:
 
